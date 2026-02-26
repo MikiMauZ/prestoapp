@@ -1,0 +1,22 @@
+{
+  "placeholderImages": [
+    {
+      "id": "hero-hotel",
+      "description": "Hotel de lujo con piscina",
+      "imageUrl": "https://images.unsplash.com/photo-1729673766770-83160c576668?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxsdXh1cnklMjBob3RlbCUyMHBvb2x8ZW58MHx8fHwxNzcyMDUzNjQyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "luxury hotel pool"
+    },
+    {
+      "id": "tech-check",
+      "description": "Técnico revisando equipo",
+      "imageUrl": "https://images.unsplash.com/photo-1744302448222-b7ab4db49291?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxtYWludGVuYW5jZSUyMHRlY2huaWNpYW58ZW58MHx8fHwxNzcyMDUzNjQyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "maintenance technician"
+    },
+    {
+      "id": "water-test",
+      "description": "Prueba de calidad del agua",
+      "imageUrl": "https://images.unsplash.com/photo-1643174782776-1d38478e7411?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx3YXRlciUyMGFuYWx5c2lzfGVufDB8fHx8MTc3MjA1MzY0Mnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "water analysis"
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- FUNCIONES DE AYUDA ---
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Obtiene el perfil de forma segura
+    function getProfileData() {
+      return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && getProfileData().role == 'SUPER_ADMIN';
+    }
+
+    function isTenantMember(tenantId) {
+      let profile = getProfileData();
+      return isSignedIn() && (
+        profile.role == 'SUPER_ADMIN' || 
+        profile.tenantId == tenantId
+      );
+    }
+
+    // --- REGLAS DE PERFILES DE USUARIO ---
+
+    match /userProfiles/{userId} {
+      // Un usuario siempre puede leer y actualizar su propio perfil (necesario para login y cambios de datos)
+      allow get: if isSignedIn() && request.auth.uid == userId;
+      allow list: if isSuperAdmin();
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && request.auth.uid == userId;
+      allow delete: if false;
+    }
+
+    // --- REGLAS DE TENANTS Y SUBCOLECCIONES ---
+
+    match /tenants/{tenantId} {
+      // Acceso al documento raíz del hotel
+      allow get: if isTenantMember(tenantId);
+      allow list: if isSuperAdmin();
+
+      // Todas las subcolecciones del tenant (inventario, pedidos, protocolos, etc.)
+      match /{allSubcollections=**} {
+        allow read, write: if isTenantMember(tenantId);
+      }
+    }
+  }
+}
