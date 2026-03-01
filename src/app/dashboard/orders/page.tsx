@@ -35,7 +35,9 @@ import {
   History,
   FileEdit,
   Trash,
-  Info
+  Info,
+  Building2,
+  Layers
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -62,7 +64,7 @@ import { collection, query, orderBy, doc, addDoc, serverTimestamp, updateDoc, se
 import { useToast } from '@/hooks/use-toast';
 import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import { cn } from '@/lib/utils';
-import { Order, OrderItem, OrderStatus, Supplier, CatalogItem } from '@/lib/types';
+import { Order, OrderItem, OrderStatus, Supplier, CatalogItem, InventoryItem } from '@/lib/types';
 
 export default function OrdersPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -97,11 +99,35 @@ export default function OrdersPage() {
     return query(collection(db, 'tenants', profile.tenantId, 'orderCatalog'), orderBy('name', 'asc'));
   }, [db, profile?.tenantId]);
 
+  const inventoryQuery = useMemoFirebase(() => {
+    if (!db || !profile?.tenantId) return null;
+    return query(collection(db, 'tenants', profile.tenantId, 'inventory'), orderBy('name', 'asc'));
+  }, [db, profile?.tenantId]);
+
   const { data: orders, isLoading: loading } = useCollection<Order>(ordersQuery);
   const { data: suppliers } = useCollection<Supplier>(suppliersQuery);
   const { data: catalog } = useCollection<CatalogItem>(catalogQuery);
+  const { data: inventory } = useCollection<InventoryItem>(inventoryQuery);
 
   const selectedOrder = useMemo(() => orders?.find(o => o.id === selectedOrderId), [orders, selectedOrderId]);
+
+  // Unified suggestions from catalog and inventory
+  const combinedSuggestions = useMemo(() => {
+    const suggestions: { name: string; unit: string; source: 'STOCK' | 'CATALOG' }[] = [];
+    
+    inventory?.forEach(item => {
+      suggestions.push({ name: item.name, unit: item.unit, source: 'STOCK' });
+    });
+
+    catalog?.forEach(item => {
+      // Avoid duplicates if already in inventory
+      if (!suggestions.some(s => s.name.toLowerCase() === item.name.toLowerCase())) {
+        suggestions.push({ name: item.name, unit: item.unit, source: 'CATALOG' });
+      }
+    });
+
+    return suggestions;
+  }, [catalog, inventory]);
 
   const handleAddRow = () => {
     setManualItems([...manualItems, { name: '', quantity: 1, unit: 'UNIDADES' }]);
@@ -117,9 +143,14 @@ export default function OrdersPage() {
     setManualItems(updated);
   };
 
-  const handleSelectFromCatalog = (index: number, item: CatalogItem) => {
-    handleUpdateItem(index, 'name', item.name);
-    handleUpdateItem(index, 'unit', item.unit);
+  const handleSelectSuggestion = (index: number, suggestion: { name: string; unit: string }) => {
+    const updated = [...manualItems];
+    updated[index] = { 
+      ...updated[index], 
+      name: suggestion.name, 
+      unit: suggestion.unit as any 
+    };
+    setManualItems(updated);
   };
 
   const handleCreateOrder = async () => {
@@ -139,20 +170,19 @@ export default function OrdersPage() {
       updatedAt: serverTimestamp(),
     };
 
-    // 1. Save the order
     const colRef = collection(db, 'tenants', profile.tenantId, 'orders');
     await addDoc(colRef, newOrder);
 
-    // 2. Feed the catalog with new items
+    // Update catalog with new manual items that aren't in catalog or inventory
     const catalogCol = collection(db, 'tenants', profile.tenantId, 'orderCatalog');
     validItems.forEach(item => {
-      const exists = catalog?.find(c => c.name.toLowerCase() === item.name.toLowerCase());
-      if (!exists) {
+      const existsInSuggestions = combinedSuggestions.some(s => s.name.toLowerCase() === item.name.toLowerCase());
+      if (!existsInSuggestions) {
         addDoc(catalogCol, { name: item.name, unit: item.unit });
       }
     });
 
-    toast({ title: "Pedido creado", description: "El borrador manual ha sido registrado y los artículos guardados en tu historial." });
+    toast({ title: "Pedido creado", description: "El borrador ha sido registrado correctamente." });
     setManualItems([{ name: '', quantity: 1, unit: 'KG' }]);
     setIsCreateDialogOpen(false);
   };
@@ -165,7 +195,7 @@ export default function OrdersPage() {
   };
 
   const shareViaWhatsApp = (order: Order) => {
-    const hotelName = profile?.tenantName || 'PrestoApp Hotel';
+    const hotelName = profile?.tenantName || 'Hotel';
     let message = `*🏨 PEDIDO TÉCNICO - ${hotelName.toUpperCase()}*\n`;
     message += `📅 Fecha: ${new Date().toLocaleDateString()}\n`;
     message += `👤 Solicitado por: ${order.createdBy}\n`;
@@ -190,19 +220,19 @@ export default function OrdersPage() {
               <ShoppingCart className="w-8 h-8 text-accent" />
               Pedidos Técnicos
             </h2>
-            <p className="text-muted-foreground font-medium">Entrada manual de suministros y gestión de histórico.</p>
+            <p className="text-muted-foreground font-medium">Entrada de suministros con selección desde Stock.</p>
           </div>
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2 bg-accent hover:bg-accent/90 shadow-lg">
                 <Plus className="w-4 h-4" />
-                Nuevo Pedido Manual
+                Nuevo Pedido
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[800px] max-h-[90vh] flex flex-col p-0 overflow-hidden">
               <DialogHeader className="p-6 bg-slate-50 border-b">
-                <DialogTitle>Configurar Pedido Manual</DialogTitle>
-                <DialogDescription>Escribe los artículos necesarios. Los nuevos se guardarán para futuros pedidos.</DialogDescription>
+                <DialogTitle>Configurar Pedido</DialogTitle>
+                <DialogDescription>Selecciona artículos de tu Stock o escribe nuevos para guardarlos.</DialogDescription>
               </DialogHeader>
               
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
@@ -240,18 +270,29 @@ export default function OrdersPage() {
                             placeholder="Ej: Hipoclorito Sódico 15%"
                             className="bg-white"
                           />
-                          {/* Sencilla lista de sugerencias si coincide con el catálogo */}
-                          {item.name.length > 2 && catalog?.some(c => c.name.toLowerCase().includes(item.name.toLowerCase()) && c.name !== item.name) && (
-                            <div className="absolute z-50 w-full bg-white border rounded-md shadow-lg mt-1 max-h-32 overflow-y-auto">
-                              {catalog.filter(c => c.name.toLowerCase().includes(item.name.toLowerCase())).map(c => (
-                                <button 
-                                  key={c.id} 
-                                  className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 border-b last:border-0"
-                                  onClick={() => handleSelectFromCatalog(idx, c)}
-                                >
-                                  {c.name} ({c.unit})
-                                </button>
-                              ))}
+                          {/* Suggestion List */}
+                          {item.name.length > 1 && (
+                            <div className="absolute z-50 w-full bg-white border rounded-md shadow-xl mt-1 max-h-48 overflow-y-auto">
+                              {combinedSuggestions
+                                .filter(s => s.name.toLowerCase().includes(item.name.toLowerCase()) && s.name !== item.name)
+                                .map((s, sIdx) => (
+                                  <button 
+                                    key={sIdx} 
+                                    className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 border-b last:border-0 flex justify-between items-center"
+                                    onClick={() => handleSelectSuggestion(idx, s)}
+                                  >
+                                    <span className="font-medium">{s.name}</span>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[10px] text-muted-foreground">({s.unit})</span>
+                                      <Badge variant="outline" className={cn(
+                                        "text-[8px] font-black uppercase tracking-tighter h-4 px-1",
+                                        s.source === 'STOCK' ? "border-blue-200 text-blue-600 bg-blue-50" : "border-slate-200 text-slate-500"
+                                      )}>
+                                        {s.source === 'STOCK' ? <><Layers className="w-2 h-2 mr-0.5" /> STOCK</> : 'HISTORIAL'}
+                                      </Badge>
+                                    </div>
+                                  </button>
+                                ))}
                             </div>
                           )}
                         </div>

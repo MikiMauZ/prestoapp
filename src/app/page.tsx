@@ -8,7 +8,6 @@ import {
   Droplets, 
   ClipboardCheck, 
   BarChart3, 
-  Clock, 
   CheckCircle2,
   ChevronRight,
   Menu,
@@ -22,7 +21,6 @@ export default function LandingPage() {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
   const heroImage = PlaceHolderImages.find(img => img.id === 'hero-hotel');
-  const techImage = PlaceHolderImages.find(img => img.id === 'tech-check');
   const waterImage = PlaceHolderImages.find(img => img.id === 'water-test');
 
   return (
@@ -60,13 +58,13 @@ export default function LandingPage() {
         {/* Mobile menu */}
         {isMenuOpen && (
           <div className="md:hidden bg-white border-b p-4 space-y-4 animate-in slide-in-from-top-4">
-            <Link href="#features" className="block text-lg font-medium py-2">Características</Link>
-            <Link href="#compliance" className="block text-lg font-medium py-2">Normativa RD 3/2023</Link>
+            <Link href="#features" onClick={() => setIsMenuOpen(false)} className="block text-lg font-medium py-2">Características</Link>
+            <Link href="#compliance" onClick={() => setIsMenuOpen(false)} className="block text-lg font-medium py-2">Normativa RD 3/2023</Link>
             <div className="grid gap-2 pt-4">
-              <Button variant="outline" asChild w-full>
+              <Button variant="outline" asChild className="w-full">
                 <Link href="/login">Iniciar Sesión</Link>
               </Button>
-              <Button className="w-full bg-accent">Solicitar Demo</Button>
+              <Button className="w-full bg-accent text-white">Solicitar Demo</Button>
             </div>
           </div>
         )}
@@ -83,33 +81,34 @@ export default function LandingPage() {
               </span>
               Líder en Sector Hotelero
             </div>
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-primary leading-[1.1] tracking-tight">
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-primary leading-[1.1] tracking-tight">
               Control Técnico y Calidad <span className="text-accent">Sin Errores.</span>
             </h1>
-            <p className="text-xl text-muted-foreground leading-relaxed max-w-xl">
+            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-xl">
               La plataforma definitiva para la gestión de servicios técnicos hoteleros. Digitaliza tus verificaciones de agua según el <strong>RD 3/2023</strong> con bloqueo legal de registros.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <Button size="lg" className="h-16 px-8 text-lg font-bold bg-primary shadow-xl shadow-primary/20 gap-2" asChild>
+              <Button size="lg" className="h-14 md:h-16 px-8 text-lg font-bold bg-primary shadow-xl shadow-primary/20 gap-2 text-white" asChild>
                 <Link href="/login">
                   Comenzar Ahora
                   <ChevronRight className="w-5 h-5" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" className="h-16 px-8 text-lg font-bold border-2">
+              <Button size="lg" variant="outline" className="h-14 md:h-16 px-8 text-lg font-bold border-2">
                 Ver Vídeo Demo
               </Button>
             </div>
           </div>
-          <div className="relative animate-in zoom-in-95 duration-1000">
+          <div className="relative animate-in zoom-in-95 duration-1000 hidden lg:block">
             <div className="absolute -inset-4 bg-accent/20 rounded-[2rem] blur-3xl -z-10" />
             <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border-8 border-white">
               <Image 
-                src={heroImage?.imageUrl || "https://picsum.photos/seed/presto1/1200/800"} 
+                src={heroImage?.imageUrl || "https://res.cloudinary.com/dlscxco5p/image/upload/v1772175014/Gemini_Generated_Image_wmenprwmenprwmen_ib6kpy.png"} 
                 alt="PrestoApp Hotel Dashboard" 
                 width={1200} 
                 height={800}
                 className="object-cover"
+                priority
                 data-ai-hint="luxury hotel"
               />
             </div>
@@ -118,16 +117,16 @@ export default function LandingPage() {
       </section>
 
       {/* Features Grid */}
-      <section id="features" className="py-24 bg-white">
+      <section id="features" className="py-20 md:py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-20 space-y-4">
-            <h2 className="text-4xl font-black text-primary">Diseñado para la Excelencia Técnica</h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+          <div className="text-center mb-12 md:mb-20 space-y-4">
+            <h2 className="text-3xl md:text-4xl font-black text-primary">Diseñado para la Excelencia Técnica</h2>
+            <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto">
               Elimina el papel y los errores humanos con herramientas diseñadas específicamente para el personal de mantenimiento hotelero.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               { 
                 icon: Droplets, 
@@ -164,24 +163,24 @@ export default function LandingPage() {
       </section>
 
       {/* Compliance Section */}
-      <section id="compliance" className="py-24 bg-primary text-white overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 grid lg:grid-cols-2 gap-16 items-center">
-          <div className="relative">
+      <section id="compliance" className="py-20 md:py-24 bg-primary text-white overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-16 items-center">
+          <div className="relative order-2 lg:order-1">
              <Image 
-                src={waterImage?.imageUrl || "https://picsum.photos/seed/presto3/600/400"} 
+                src={waterImage?.imageUrl || "https://res.cloudinary.com/dlscxco5p/image/upload/v1772400891/Gemini_Generated_Image_3vxyem3vxyem3vxy_knh862.png"} 
                 alt="Water Quality Compliance" 
                 width={600} 
                 height={400}
-                className="rounded-3xl shadow-2xl rotate-2"
+                className="rounded-3xl shadow-2xl rotate-2 object-cover"
                 data-ai-hint="water analysis"
               />
-              <div className="absolute -bottom-6 -right-6 bg-accent p-6 rounded-2xl shadow-xl animate-bounce">
-                <CheckCircle2 className="w-12 h-12" />
+              <div className="absolute -bottom-6 -right-6 bg-accent p-4 md:p-6 rounded-2xl shadow-xl animate-bounce">
+                <CheckCircle2 className="w-8 h-8 md:w-12 md:h-12" />
               </div>
           </div>
-          <div className="space-y-6">
-            <h2 className="text-4xl font-black leading-tight">Cumplimiento Estricto <br /><span className="text-accent">RD 3/2023</span></h2>
-            <p className="text-primary-foreground/80 text-lg leading-relaxed">
+          <div className="space-y-6 order-1 lg:order-2">
+            <h2 className="text-3xl md:text-4xl font-black leading-tight">Cumplimiento Estricto <br /><span className="text-accent">RD 3/2023</span></h2>
+            <p className="text-primary-foreground/80 text-base md:text-lg leading-relaxed">
               Adaptamos su plan de control sanitario a la nueva legislación española. Nuestro sistema garantiza que cada medición de fotómetro y turbidímetro sea veraz y esté debidamente documentada.
             </p>
             <ul className="space-y-4">
@@ -191,7 +190,7 @@ export default function LandingPage() {
                 "Evidencia visual de cada parámetro",
                 "Exportación instantánea para Sanidad"
               ].map((item, i) => (
-                <li key={i} className="flex items-center gap-3 font-semibold">
+                <li key={i} className="flex items-center gap-3 font-semibold text-sm md:text-base">
                   <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center">
                     <CheckCircle2 className="w-4 h-4 text-accent" />
                   </div>
@@ -199,46 +198,8 @@ export default function LandingPage() {
                 </li>
               ))}
             </ul>
-            <Button size="lg" variant="secondary" className="mt-8 font-bold px-10">
+            <Button size="lg" variant="secondary" className="mt-4 md:mt-8 font-bold px-10 w-full md:w-auto text-primary">
               Saber más sobre RD 3/2023
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Social Proof / Stats */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            {[
-              { label: "Hoteles", val: "450+" },
-              { label: "Verificaciones/Mes", val: "12k+" },
-              { label: "Cumplimiento Medio", val: "99.8%" },
-              { label: "Soporte Técnico", val: "24/7" },
-            ].map((s, i) => (
-              <div key={i} className="space-y-2">
-                <div className="text-4xl font-black text-primary">{s.val}</div>
-                <div className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-24 px-4">
-        <div className="max-w-5xl mx-auto rounded-[3rem] bg-accent p-12 md:p-20 text-center space-y-8 shadow-2xl shadow-accent/20 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
-          <h2 className="text-4xl md:text-5xl font-black text-white">¿Listo para modernizar tu servicio técnico?</h2>
-          <p className="text-white/80 text-xl max-w-2xl mx-auto">
-            Únete a las cadenas hoteleras que ya confían en PrestoApp para garantizar la seguridad de sus clientes.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="h-16 px-10 text-lg font-bold bg-white text-accent hover:bg-white/90 shadow-xl">
-              Agendar Demo Gratuita
-            </Button>
-            <Button size="lg" variant="outline" className="h-16 px-10 text-lg font-bold border-white text-white hover:bg-white/10">
-              Ver Tarifas
             </Button>
           </div>
         </div>
@@ -246,8 +207,8 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="py-12 border-t bg-secondary/10">
-        <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-4 gap-12">
-          <div className="col-span-2 space-y-4">
+        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-12">
+          <div className="md:col-span-2 space-y-4">
             <div className="flex items-center gap-2">
               <ShieldCheck className="text-primary w-8 h-8" />
               <span className="text-2xl font-black text-primary">PrestoApp</span>
@@ -256,21 +217,23 @@ export default function LandingPage() {
               La plataforma inteligente para el mantenimiento y control de calidad en el sector hospitality.
             </p>
           </div>
-          <div className="space-y-4">
-            <h4 className="font-bold uppercase tracking-widest text-xs">Producto</h4>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link href="#">Funcionalidades</Link></li>
-              <li><Link href="#">Normativa</Link></li>
-              <li><Link href="#">Seguridad</Link></li>
-            </ul>
-          </div>
-          <div className="space-y-4">
-            <h4 className="font-bold uppercase tracking-widest text-xs">Compañía</h4>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link href="#">Contacto</Link></li>
-              <li><Link href="#">Aviso Legal</Link></li>
-              <li><Link href="#">Privacidad</Link></li>
-            </ul>
+          <div className="grid grid-cols-2 gap-8 md:col-span-2">
+            <div className="space-y-4">
+              <h4 className="font-bold uppercase tracking-widest text-xs">Producto</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li><Link href="#">Funcionalidades</Link></li>
+                <li><Link href="#">Normativa</Link></li>
+                <li><Link href="#">Seguridad</Link></li>
+              </ul>
+            </div>
+            <div className="space-y-4">
+              <h4 className="font-bold uppercase tracking-widest text-xs">Compañía</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li><Link href="#">Contacto</Link></li>
+                <li><Link href="#">Aviso Legal</Link></li>
+                <li><Link href="#">Privacidad</Link></li>
+              </ul>
+            </div>
           </div>
         </div>
         <div className="max-w-7xl mx-auto px-4 mt-12 pt-8 border-t text-center text-sm text-muted-foreground">

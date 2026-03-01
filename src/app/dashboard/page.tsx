@@ -1,7 +1,7 @@
 
 "use client"
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { 
   Card, 
@@ -65,14 +65,6 @@ export default function DashboardPage() {
       bar: 'bg-blue-600' 
     },
     { 
-      label: 'Cumplimiento', 
-      value: '98.2%', 
-      icon: ShieldCheck, 
-      color: 'text-green-600', 
-      bg: 'bg-green-50', 
-      bar: 'bg-green-600' 
-    },
-    { 
       label: 'Incidencias Abiertas', 
       value: openIncidents?.length || '0', 
       icon: AlertCircle, 
@@ -105,7 +97,7 @@ export default function DashboardPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {stats.map((stat) => (
           <Card key={stat.label} className="border-none shadow-sm hover:shadow-md transition-shadow overflow-hidden group">
             <div className={cn("h-1 w-full", stat.bar)} />

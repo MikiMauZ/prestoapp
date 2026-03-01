@@ -1,7 +1,7 @@
 
 "use client"
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { 
   Card, 
@@ -34,7 +34,10 @@ import {
   PauseCircle,
   PlayCircle,
   Send,
-  CalendarDays
+  CalendarDays,
+  Camera,
+  Loader2,
+  Image as ImageIcon
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -63,6 +66,8 @@ import { useToast } from '@/hooks/use-toast';
 import { addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import { cn } from '@/lib/utils';
 import { LogbookEntry, LogbookStatus, ShiftType } from '@/lib/types';
+import { uploadToCloudinary } from '@/lib/cloudinary';
+import Image from 'next/image';
 
 export default function LogbookPage() {
   const [activeTab, setActiveTab] = useState('open');
@@ -70,6 +75,11 @@ export default function LogbookPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState('');
+  
+  // Image upload states
+  const [isUploading, setIsUploading] = useState(false);
+  const [entryPhotos, setEntryPhotos] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { user } = useUser();
   const db = useFirestore();
@@ -128,6 +138,23 @@ export default function LogbookPage() {
     };
   }, [logbookEntries]);
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    try {
+      const uploadPromises = Array.from(files).map(file => uploadToCloudinary(file));
+      const urls = await Promise.all(uploadPromises);
+      setEntryPhotos(prev => [...prev, ...urls]);
+      toast({ title: "Fotos subidas", description: "Las imágenes se han adjuntado correctamente." });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error de carga", description: "No se pudieron subir las imágenes." });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleCreateEntry = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!db || !profile?.tenantId || !user) return;
@@ -141,6 +168,7 @@ export default function LogbookPage() {
       priority: formData.get('priority'),
       status: 'ABIERTO',
       relatedArea: formData.get('area'),
+      attachments: entryPhotos,
       createdBy: profile.displayName || user.email,
       createdById: user.uid,
       createdAt: serverTimestamp(),
@@ -154,6 +182,7 @@ export default function LogbookPage() {
       title: "Entrada registrada",
       description: "La nueva actividad ha sido añadida al logbook.",
     });
+    setEntryPhotos([]);
     setIsDialogOpen(false);
   };
 
@@ -213,7 +242,10 @@ export default function LogbookPage() {
             <h2 className="text-3xl font-bold tracking-tight text-primary">Logbook Operativo</h2>
             <p className="text-muted-foreground font-medium">Gestión interna de incidencias y cambios de turno.</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) setEntryPhotos([]);
+          }}>
             <DialogTrigger asChild>
               <Button className="gap-2 bg-accent hover:bg-accent/90 shadow-lg shadow-accent/20">
                 <Plus className="w-4 h-4" />
@@ -281,9 +313,50 @@ export default function LogbookPage() {
                   <Label htmlFor="description">Descripción Detallada</Label>
                   <Textarea id="description" name="description" required rows={4} placeholder="Describe el estado o la incidencia..." />
                 </div>
+
+                <div className="space-y-2">
+                  <Label>Adjuntar Evidencias (Fotos)</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {entryPhotos.map((url, i) => (
+                      <div key={i} className="relative w-16 h-16 rounded-md overflow-hidden border">
+                        <Image src={url} alt={`Adjunto ${i}`} fill className="object-cover" />
+                        <button 
+                          type="button" 
+                          onClick={() => setEntryPhotos(prev => prev.filter((_, idx) => idx !== i))}
+                          className="absolute top-0 right-0 bg-red-500 text-white p-0.5 rounded-bl-md"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className={cn(
+                        "w-16 h-16 rounded-md border-2 border-dashed flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-accent hover:text-accent transition-colors",
+                        isUploading && "opacity-50 cursor-not-allowed"
+                      )}
+                      disabled={isUploading}
+                    >
+                      {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+                      <span className="text-[8px] font-bold uppercase">Subir</span>
+                    </button>
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      className="hidden" 
+                      accept="image/*" 
+                      multiple 
+                      onChange={handleFileUpload} 
+                    />
+                  </div>
+                </div>
+
                 <DialogFooter className="pt-4">
                   <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
-                  <Button type="submit" className="bg-primary">Guardar Registro</Button>
+                  <Button type="submit" className="bg-primary" disabled={isUploading}>
+                    {isUploading ? "Subiendo..." : "Guardar Registro"}
+                  </Button>
                 </DialogFooter>
               </form>
             </DialogContent>
@@ -396,7 +469,10 @@ export default function LogbookPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col">
-                          <span className="font-bold text-sm">{entry.title}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-sm">{entry.title}</span>
+                            {entry.attachments && entry.attachments.length > 0 && <ImageIcon className="w-3 h-3 text-accent" />}
+                          </div>
                           <span className="text-[10px] text-muted-foreground uppercase tracking-widest">{entry.type?.replace('_', ' ')}</span>
                         </div>
                       </TableCell>
@@ -471,6 +547,19 @@ export default function LogbookPage() {
                     <p className="text-xs font-bold">{selectedEntry.createdAt?.toDate ? selectedEntry.createdAt.toDate().toLocaleString() : 'N/A'}</p>
                   </div>
                 </div>
+
+                {selectedEntry.attachments && selectedEntry.attachments.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-black text-muted-foreground uppercase">Evidencias Adjuntas</p>
+                    <div className="flex flex-wrap gap-3">
+                      {selectedEntry.attachments.map((url, i) => (
+                        <div key={i} className="relative w-32 h-32 rounded-xl overflow-hidden border-2 shadow-sm cursor-pointer hover:scale-105 transition-transform" onClick={() => window.open(url, '_blank')}>
+                          <Image src={url} alt={`Evidencia ${i}`} fill className="object-cover" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <p className="text-[10px] font-black text-muted-foreground uppercase">Descripción del Problema / Nota</p>

@@ -1,7 +1,7 @@
 
 "use client"
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { 
   Card, 
@@ -23,7 +23,10 @@ import {
   Eye,
   ArrowLeft,
   Calendar,
-  User as UserIcon
+  User as UserIcon,
+  Camera,
+  Loader2,
+  X
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -50,6 +53,8 @@ import { useCollection, useFirestore, useUser, useDoc, useMemoFirebase } from '@
 import { collection, query, orderBy, doc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { addDocumentNonBlocking } from '@/firebase';
+import { uploadToCloudinary } from '@/lib/cloudinary';
+import Image from 'next/image';
 
 const categories = [
   { name: 'ELECTRICIDAD', icon: Zap, color: 'text-yellow-500', bg: 'bg-yellow-50' },
@@ -62,6 +67,11 @@ export default function KnowledgeBasePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<any>(null);
+  
+  // Image upload states
+  const [isUploading, setIsUploading] = useState(false);
+  const [articlePhotos, setArticlePhotos] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { user } = useUser();
   const db = useFirestore();
@@ -93,6 +103,23 @@ export default function KnowledgeBasePage() {
     );
   }, [articles, searchTerm]);
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    try {
+      const uploadPromises = Array.from(files).map(file => uploadToCloudinary(file));
+      const urls = await Promise.all(uploadPromises);
+      setArticlePhotos(prev => [...prev, ...urls]);
+      toast({ title: "Evidencia subida", description: "La imagen se ha adjuntado a la solución." });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error de carga", description: "No se pudo subir la imagen." });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleCreateArticle = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!db || !profile?.tenantId || !user) return;
@@ -106,6 +133,7 @@ export default function KnowledgeBasePage() {
       difficulty: formData.get('difficulty'),
       tags: (formData.get('tags') as string).split(',').map(t => t.trim()).filter(Boolean),
       viewsCount: 0,
+      images: articlePhotos,
       createdBy: profile.displayName || user.email,
       createdById: user.uid,
       createdAt: serverTimestamp(),
@@ -119,6 +147,7 @@ export default function KnowledgeBasePage() {
       title: "Artículo publicado",
       description: "La solución técnica ha sido añadida a la base de conocimientos.",
     });
+    setArticlePhotos([]);
     setIsDialogOpen(false);
   };
 
@@ -133,14 +162,17 @@ export default function KnowledgeBasePage() {
             </h2>
             <p className="text-muted-foreground font-medium">Base de conocimiento estructurada para averías y soluciones.</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) setArticlePhotos([]);
+          }}>
             <DialogTrigger asChild>
               <Button className="gap-2 bg-primary hover:bg-primary/90 shadow-lg">
                 <Plus className="w-4 h-4" />
                 Nueva Documentación
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Documentar Nueva Solución Técnica</DialogTitle>
               </DialogHeader>
@@ -186,13 +218,54 @@ export default function KnowledgeBasePage() {
                   <Label htmlFor="solutionSteps">Pasos para la Solución</Label>
                   <Textarea id="solutionSteps" name="solutionSteps" required rows={5} placeholder="Paso 1, Paso 2..." />
                 </div>
+                
+                <div className="space-y-2">
+                  <Label>Esquema o Foto de Referencia</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {articlePhotos.map((url, i) => (
+                      <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border">
+                        <Image src={url} alt={`Ref ${i}`} fill className="object-cover" />
+                        <button 
+                          type="button" 
+                          onClick={() => setArticlePhotos(prev => prev.filter((_, idx) => idx !== i))}
+                          className="absolute top-0 right-0 bg-red-500 text-white p-0.5 rounded-bl-md"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className={cn(
+                        "w-20 h-20 rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-accent hover:text-accent transition-colors",
+                        isUploading && "opacity-50 cursor-not-allowed"
+                      )}
+                      disabled={isUploading}
+                    >
+                      {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
+                      <span className="text-[10px] font-bold uppercase">Subir</span>
+                    </button>
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      className="hidden" 
+                      accept="image/*" 
+                      multiple 
+                      onChange={handleFileUpload} 
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="tags">Tags (separados por coma)</Label>
                   <Input id="tags" name="tags" placeholder="variador, motor, bomba, reset" />
                 </div>
                 <DialogFooter className="pt-4">
                   <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
-                  <Button type="submit" className="bg-primary">Publicar Artículo</Button>
+                  <Button type="submit" className="bg-primary" disabled={isUploading}>
+                    {isUploading ? "Cargando..." : "Publicar Artículo"}
+                  </Button>
                 </DialogFooter>
               </form>
             </DialogContent>
@@ -227,6 +300,22 @@ export default function KnowledgeBasePage() {
                     "{selectedArticle.problemDescription}"
                   </div>
                 </section>
+
+                {selectedArticle.images && selectedArticle.images.length > 0 && (
+                  <section>
+                    <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
+                      <ImageIcon className="w-4 h-4" />
+                      Esquemas y Referencias Visuales
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {selectedArticle.images.map((url: string, i: number) => (
+                        <div key={i} className="relative aspect-video rounded-2xl overflow-hidden border-4 border-white shadow-lg">
+                          <Image src={url} alt={`Referencia ${i}`} fill className="object-cover" />
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
 
                 <section>
                   <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
@@ -303,6 +392,11 @@ export default function KnowledgeBasePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredArticles.map((article) => (
                     <Card key={article.id} className="border-none shadow-md hover:shadow-xl transition-all group flex flex-col">
+                      {article.images && article.images.length > 0 && (
+                        <div className="relative h-40 w-full overflow-hidden rounded-t-lg">
+                          <Image src={article.images[0]} alt={article.title} fill className="object-cover group-hover:scale-105 transition-transform" />
+                        </div>
+                      )}
                       <CardHeader>
                         <div className="flex justify-between items-start mb-2">
                           <Badge className="bg-primary/10 text-primary border-none text-[10px]">{article.category}</Badge>

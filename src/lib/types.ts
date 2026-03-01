@@ -14,8 +14,24 @@ export interface UserProfile {
 export interface Tenant {
   id: string;
   name: string;
+  cif?: string;
+  address?: string;
   createdAt: any;
   updatedAt: any;
+}
+
+// Water Installations
+export type WaterInstallationType = 'PISCINA' | 'ALJIBE' | 'DEPOSITO' | 'SPA' | 'OTRO';
+
+export interface WaterInstallation {
+  id: string;
+  name: string;
+  type: WaterInstallationType;
+  volume: number;
+  dimensions?: string;
+  photos?: string[];
+  notes?: string;
+  createdAt: any;
 }
 
 // Suppliers
@@ -122,6 +138,23 @@ export interface KnowledgeBaseArticle {
   createdAt: any;
   updatedAt: any;
   viewsCount: number;
+  images?: string[];
+}
+
+// Documents & Certificates
+export type DocumentCategory = 'LEGAL' | 'TECNICO' | 'FORMACION' | 'OTROS';
+export type DocumentSourceType = 'FILE' | 'LINK';
+
+export interface DocumentRecord {
+  id: string;
+  title: string;
+  category: DocumentCategory;
+  type: DocumentSourceType;
+  url: string;
+  expiryDate?: string;
+  notes?: string;
+  createdBy: string;
+  createdAt: any;
 }
 
 // Normative / Verifications
@@ -153,4 +186,61 @@ export interface VerificationRecord {
   overallResult: 'PASS' | 'FAIL' | 'PENDING';
   createdAt: any;
   updatedAt: any;
+}
+
+// Verification Equipment
+export type EquipmentStatus = 'ACTIVE' | 'IN_REPAIR' | 'RETIRED';
+
+export interface VerificationEquipment {
+  id: string;
+  name: string;
+  brand?: string;
+  model?: string;
+  serialNumber: string;
+  lastCalibrationDate?: string;
+  nextCalibrationDate?: string;
+  status: EquipmentStatus;
+  notes?: string;
+  createdAt: any;
+}
+
+// Memorias de Actuación
+export type MemoriaType = 'PREVENTIVO' | 'E_COLI' | 'PSEUDOMONAS' | 'LEGIONELLA' | 'FECAL_SOLIDO' | 'OTRO';
+
+export interface MemoriaActuacion {
+  id: string;
+  docNumber: string;
+  type: MemoriaType;
+  location: string;
+  installationId?: string;
+  incidentDate: string;
+  reportDate: string;
+  introduction: string;
+  justification: string;
+  incidentSource?: string;
+  affectedParameter?: string;
+  procedureDetails: {
+    areaTreated: string;
+    preparation: string;
+    process: string;
+    safetyMeasures: string;
+    treatmentType?: string;
+    concentration?: string;
+    contactTime?: string;
+  };
+  resultsData?: {
+    cloroBefore?: number;
+    cloroAfter?: number;
+    phBefore?: number;
+    phAfter?: number;
+    otherBefore?: string;
+    otherAfter?: string;
+  };
+  results: string;
+  conclusions: string;
+  createdBy: string;
+  createdAt: any;
+  cif?: string;
+  address?: string;
+  documentHash?: string;
 }

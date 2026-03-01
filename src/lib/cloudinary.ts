@@ -1,9 +1,10 @@
+
 /**
- * @fileOverview Utilidad para subir imágenes a Cloudinary utilizando firmas del servidor.
+ * @fileOverview Utilidad para subir archivos a Cloudinary utilizando firmas del servidor.
+ * Soporta imágenes y documentos (PDF, etc).
  */
 
 export async function uploadToCloudinary(file: File): Promise<string> {
-  // Usamos el identificador proporcionado por el usuario como nombre de la nube por defecto
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'a91b9a96-b7dc-46b3-a758-090d9afb4e51';
   const apiKey = process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY;
 
@@ -30,9 +31,10 @@ export async function uploadToCloudinary(file: File): Promise<string> {
   formData.append('signature', signature);
   formData.append('timestamp', timestamp.toString());
   formData.append('api_key', apiKey || '');
-
+  
+  // Usamos resource_type auto para soportar PDF, Word, etc
   const uploadResponse = await fetch(
-    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+    `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`,
     {
       method: 'POST',
       body: formData,

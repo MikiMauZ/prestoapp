@@ -2,9 +2,9 @@
   "placeholderImages": [
     {
       "id": "hero-hotel",
-      "description": "Hotel de lujo con piscina",
-      "imageUrl": "https://images.unsplash.com/photo-1729673766770-83160c576668?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxsdXh1cnklMjBob3RlbCUyMHBvb2x8ZW58MHx8fHwxNzcyMDUzNjQyfDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "luxury hotel pool"
+      "description": "Panel de control técnico hotelero inteligente",
+      "imageUrl": "https://res.cloudinary.com/dlscxco5p/image/upload/v1772175014/Gemini_Generated_Image_wmenprwmenprwmen_ib6kpy.png",
+      "imageHint": "hotel technology"
     },
     {
       "id": "tech-check",
@@ -14,8 +14,8 @@
     },
     {
       "id": "water-test",
-      "description": "Prueba de calidad del agua",
-      "imageUrl": "https://images.unsplash.com/photo-1643174782776-1d38478e7411?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx3YXRlciUyMGFuYWx5c2lzfGVufDB8fHx8MTc3MjA1MzY0Mnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "description": "Prueba de calidad del agua y cumplimiento normativo",
+      "imageUrl": "https://res.cloudinary.com/dlscxco5p/image/upload/v1772400891/Gemini_Generated_Image_3vxyem3vxyem3vxy_knh862.png",
       "imageHint": "water analysis"
     }
   ]
