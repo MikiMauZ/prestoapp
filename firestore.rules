@@ -1,48 +1,45 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- FUNCIONES DE AYUDA ---
+    // --- HELPERS ---
 
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // Obtener datos del perfil de forma eficiente
-    function getProfileData() {
+    // Obtenemos el perfil del usuario autenticado de forma segura
+    // Evitamos llamar a get() si es posible para mejorar el rendimiento
+    function getUserProfile() {
       return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data;
     }
 
-    // --- REGLAS DE PERFILES DE USUARIO ---
+    // --- USER PROFILES ---
 
     match /userProfiles/{userId} {
       // Un usuario siempre puede leer su propio perfil
       allow read: if isSignedIn() && request.auth.uid == userId;
       
-      // Super admins pueden gestionar todos los perfiles
-      allow write: if isSignedIn() && getProfileData().role == 'SUPER_ADMIN';
-      
-      // Permitir actualización de perfil propio (protegiendo el campo role)
+      // Permitir actualización de datos propios (excepto el rol)
       allow update: if isSignedIn() && request.auth.uid == userId && request.resource.data.role == resource.data.role;
+      
+      // Super admins tienen acceso total
+      allow read, write: if isSignedIn() && getUserProfile().role == 'SUPER_ADMIN';
     }
 
-    // --- REGLAS DE TENANTS Y SUBCOLECCIONES ---
+    // --- TENANTS AND SUBCOLLECTIONS ---
 
     match /tenants/{tenantId} {
-      // El documento raíz del hotel es legible por cualquier usuario autenticado
+      // Lectura del hotel base
       allow get: if isSignedIn();
       
       match /{allSubcollections=**} {
-        // Validación unificada para subcolecciones (Logbook, Verificaciones, Inventario, etc.)
-        allow read: if isSignedIn() && (
-          get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.tenantId == tenantId ||
-          get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'SUPER_ADMIN'
-        );
-        
-        allow write: if isSignedIn() && (
-          get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.tenantId == tenantId
+        // Validación de acceso al hotel
+        // Se permite el acceso si el perfil del usuario tiene el tenantId correcto
+        allow read, write: if isSignedIn() && (
+          getUserProfile().tenantId == tenantId ||
+          getUserProfile().role == 'SUPER_ADMIN'
         );
       }
     }
