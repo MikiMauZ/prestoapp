@@ -10,7 +10,6 @@ service cloud.firestore {
     }
 
     // Obtenemos el perfil del usuario autenticado de forma segura
-    // Evitamos llamar a get() si es posible para mejorar el rendimiento
     function getUserProfile() {
       return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data;
     }
@@ -18,25 +17,22 @@ service cloud.firestore {
     // --- USER PROFILES ---
 
     match /userProfiles/{userId} {
-      // Un usuario siempre puede leer su propio perfil
       allow read: if isSignedIn() && request.auth.uid == userId;
-      
-      // Permitir actualización de datos propios (excepto el rol)
       allow update: if isSignedIn() && request.auth.uid == userId && request.resource.data.role == resource.data.role;
-      
-      // Super admins tienen acceso total
       allow read, write: if isSignedIn() && getUserProfile().role == 'SUPER_ADMIN';
     }
 
     // --- TENANTS AND SUBCOLLECTIONS ---
 
     match /tenants/{tenantId} {
-      // Lectura del hotel base
-      allow get: if isSignedIn();
+      allow get: if isSignedIn() || request.auth == null; // Permitir get básico para acceso público vía QR
       
+      // Regla específica para Biblioteca Técnica (Lectura Pública vía QR)
+      match /knowledgeBase/{articleId} {
+        allow read: if true; 
+      }
+
       match /{allSubcollections=**} {
-        // Validación de acceso al hotel
-        // Se permite el acceso si el perfil del usuario tiene el tenantId correcto
         allow read, write: if isSignedIn() && (
           getUserProfile().tenantId == tenantId ||
           getUserProfile().role == 'SUPER_ADMIN'
