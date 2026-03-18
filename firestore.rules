@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -9,7 +10,6 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Obtenemos el perfil del usuario autenticado de forma segura
     function getUserProfile() {
       return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data;
     }
@@ -22,12 +22,18 @@ service cloud.firestore {
       allow read, write: if isSignedIn() && getUserProfile().role == 'SUPER_ADMIN';
     }
 
+    // --- BLOG POSTS (PUBLIC READ) ---
+
+    match /blogPosts/{postId} {
+      allow read: if true;
+      allow write: if isSignedIn() && getUserProfile().role == 'SUPER_ADMIN';
+    }
+
     // --- TENANTS AND SUBCOLLECTIONS ---
 
     match /tenants/{tenantId} {
-      allow get: if isSignedIn() || request.auth == null; // Permitir get básico para acceso público vía QR
+      allow get: if isSignedIn() || request.auth == null;
       
-      // Regla específica para Biblioteca Técnica (Lectura Pública vía QR)
       match /knowledgeBase/{articleId} {
         allow read: if true; 
       }
